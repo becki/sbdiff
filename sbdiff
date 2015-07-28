@@ -69,8 +69,10 @@ local nodiffcol = "\027[37m"
 local newfilecol= "\027[35m"
 local coloff    = "\027[0m\n"
 
-local diffcmd="diff -Npryt "
+local diffcmd= "diff -Npryt "
 local diffcmdlen= diffcmd:len()
+local binfile= "Binary files "
+local binfilelen= binfile:len()
 
 local aftermath, lnuml, lnumr, firstdiff
 
@@ -88,8 +90,9 @@ spaces= table.concat(spaces)
 
 ffreset()
 diffreset()
-for line in io.popen(diffcmd..arg[1].." "..arg[2]):lines() do
-    if line:sub(1, diffcmdlen) == diffcmd then -- Start of a file:
+for line in io.popen("LANG=en_US "..diffcmd..arg[1].." "..arg[2]):lines() do
+    if line:sub(1, diffcmdlen) == diffcmd 
+    or line:sub(1, binfilelen) == binfile then -- Start of a file:
         io.write(newfilecol, line, coloff)
         ffreset()
         diffreset()
