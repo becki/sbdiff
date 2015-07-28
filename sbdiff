@@ -80,6 +80,11 @@ local function diffreset()
 end
 diffreset()
 
+-- make left spacer for empy lines:
+local spaces= {}
+for i=1,65 do spaces[#spaces+1]= " " end
+spaces= table.concat(spaces)
+
 for line in io.popen(diffcmd..arg[1].." "..arg[2]):lines() do
     if line:sub(1, diffcmdlen) == diffcmd then -- Start of a file:
         if firstfile then
@@ -95,6 +100,8 @@ for line in io.popen(diffcmd..arg[1].." "..arg[2]):lines() do
     lnuml= lnuml+1
     lnumr= lnumr+1
     local token=line:sub(65,65)
+    local left=line:sub(1,64)
+    local right=line:sub(67)
     local diffcol= cols[token]
     if diffcol then -- lines differ:
         for preline in ffpull do -- drain fifo
@@ -105,15 +112,16 @@ for line in io.popen(diffcmd..arg[1].." "..arg[2]):lines() do
         elseif token==">" then
             lnuml= lnuml-1
         end
-        io.write(lnuml, " ", lnumr, " ", diffcol, line, coloff)
+        io.write(diffcol, lnuml, " ", left, token, " ", lnumr, right, coloff)
         aftermath= CONTEXT
         goto continue
     end -- lines are the same:
+    left= (left == "") and spaces or left -- fix empty lines
     if aftermath > 0 then -- need to write context of last difference
-        io.write(lnuml, " ", lnumr, " ", nodiffcol, line, coloff)
+        io.write(nodiffcol, lnuml, " ", left, token, " ", lnumr, right, coloff)
         aftermath= aftermath-1
         goto continue
     end  -- store context for next difference:
-    pushmax(CONTEXT, lnuml, " ", lnumr, " ", nodiffcol, line, coloff)
+    pushmax(CONTEXT, nodiffcol, lnuml, " ", left, token, " ", lnumr, right, coloff)
     ::continue::
 end
