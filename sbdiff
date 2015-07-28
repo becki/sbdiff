@@ -65,19 +65,20 @@ local cols= {
     [">"]= "\027[32m", -- It gets produced when  echo -e "\033... "
     ["|"]= "\027[36m", -- is done on the shell (tested)
 }
-local nodiffcol= "\027[37m"
+local nodiffcol = "\027[37m"
 local newfilecol= "\027[35m"
-local coloff= "\027[0m\n"
+local coloff    = "\027[0m\n"
 
 local diffcmd="diff -Npryt "
 local diffcmdlen= diffcmd:len()
 
-local aftermath, lnuml, lnumr
+local aftermath, lnuml, lnumr, firstdiff
 
 local function diffreset()
     aftermath= 0
     lnuml= 0
     lnumr= 0
+    firstdiff= true
 end
 
 -- make left spacer for empy lines:
@@ -96,14 +97,21 @@ for line in io.popen(diffcmd..arg[1].." "..arg[2]):lines() do
     end
     lnuml= lnuml+1
     lnumr= lnumr+1
-    local token=line:sub(DIFFPOS,DIFFPOS)
-    local left=line:sub(1,DIFFPOS-1)
-    local right=line:sub(DIFFPOS+2)
+    local left = line:sub(1, DIFFPOS-1)
+    local token= line:sub(DIFFPOS, DIFFPOS)
+    local right= line:sub(DIFFPOS+2)
     local diffcol= cols[token]
     if diffcol then -- lines differ:
-        for preline in ffpull do -- drain fifo
-            io.write(preline)
+        for preline, n in ffpull do -- drain fifo
+            if n == CONTEXT then
+                if not firstdiff then 
+                    io.write(newfilecol, "@@@", coloff)
+                end
+            else
+                io.write(preline)
+            end
         end
+        firstdiff= false
         if token=="<" then
             lnumr= lnumr-1
         elseif token==">" then
@@ -119,6 +127,6 @@ for line in io.popen(diffcmd..arg[1].." "..arg[2]):lines() do
         aftermath= aftermath-1
         goto continue
     end  -- store context for next difference:
-    pushmax(CONTEXT, nodiffcol, lnuml, " ", left, lnumr, right, coloff)
+    pushmax(CONTEXT+1, nodiffcol, lnuml, " ", left, lnumr, right, coloff)
     ::continue::
 end
