@@ -23,7 +23,9 @@
 -- THE SOFTWARE.
 
 
+local DIFFPOS= 65 -- fixme: Does diff command always place it in that column?
 local CONTEXT= 3
+
 local fifo, ffstart, ffcnt
 
 local function ffreset()
@@ -31,7 +33,6 @@ local function ffreset()
     ffstart= 1
     ffcnt= 0
 end
-ffreset()
 
 local function ffpush(item)
     assert(ffcnt>=0 and ffstart>=1)
@@ -78,13 +79,14 @@ local function diffreset()
     lnuml= 0
     lnumr= 0
 end
-diffreset()
 
 -- make left spacer for empy lines:
 local spaces= {}
-for i=1,65 do spaces[#spaces+1]= " " end
+for i= 1,DIFFPOS do spaces[#spaces+1]= " " end
 spaces= table.concat(spaces)
 
+ffreset()
+diffreset()
 for line in io.popen(diffcmd..arg[1].." "..arg[2]):lines() do
     if line:sub(1, diffcmdlen) == diffcmd then -- Start of a file:
         if firstfile then
@@ -99,9 +101,9 @@ for line in io.popen(diffcmd..arg[1].." "..arg[2]):lines() do
     end
     lnuml= lnuml+1
     lnumr= lnumr+1
-    local token=line:sub(65,65)
-    local left=line:sub(1,64)
-    local right=line:sub(67)
+    local token=line:sub(DIFFPOS,DIFFPOS)
+    local left=line:sub(1,DIFFPOS-1)
+    local right=line:sub(DIFFPOS+2)
     local diffcol= cols[token]
     if diffcol then -- lines differ:
         for preline in ffpull do -- drain fifo
