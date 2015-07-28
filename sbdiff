@@ -66,13 +66,13 @@ local cols= {
     ["|"]= "\027[36m", -- is done on the shell (tested)
 }
 local nodiffcol= "\027[37m"
+local newfilecol= "\027[35m"
 local coloff= "\027[0m\n"
 
 local diffcmd="diff -Npryt "
 local diffcmdlen= diffcmd:len()
 
 local aftermath, lnuml, lnumr
-local firstfile= true
 
 local function diffreset()
     aftermath= 0
@@ -89,12 +89,7 @@ ffreset()
 diffreset()
 for line in io.popen(diffcmd..arg[1].." "..arg[2]):lines() do
     if line:sub(1, diffcmdlen) == diffcmd then -- Start of a file:
-        if firstfile then
-            firstfile= false
-        else
-            io.write("\n")
-        end
-        io.write(line, "\n")
+        io.write(newfilecol, line, coloff)
         ffreset()
         diffreset()
         goto continue
