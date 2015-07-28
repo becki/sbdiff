@@ -1,0 +1,119 @@
+#!/usr/bin/env lua
+
+-- The MIT License (MIT)
+--
+-- Copyright (c) 2015 Stefan Beckert
+--
+-- Permission is hereby granted, free of charge, to any person obtaining a copy
+-- of this software and associated documentation files (the "Software"), to deal
+-- in the Software without restriction, including without limitation the rights
+-- to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+-- copies of the Software, and to permit persons to whom the Software is
+-- furnished to do so, subject to the following conditions:
+-- 
+-- The above copyright notice and this permission notice shall be included in
+-- all copies or substantial portions of the Software.
+--
+-- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+-- IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+-- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+-- AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+-- LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+-- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+-- THE SOFTWARE.
+
+
+local CONTEXT= 3
+local fifo, ffstart, ffcnt
+
+local function ffreset()
+    fifo= {}
+    ffstart= 1
+    ffcnt= 0
+end
+ffreset()
+
+local function ffpush(item)
+    assert(ffcnt>=0 and ffstart>=1)
+    assert(item~=nil, "Not allowed to push nil")
+    fifo[ffstart+ffcnt]= item
+    ffcnt= ffcnt+1
+    return ffcnt
+end
+
+local function ffpull()
+    assert(ffcnt>=0 and ffstart>=1)
+    if ffcnt==0 then return nil end
+    local item= fifo[ffstart]
+    fifo[ffstart]= nil
+    ffcnt= ffcnt-1
+    ffstart= (ffcnt==0) and 1 or ffstart+1
+    return item, ffcnt
+end
+
+local function pushmax(limit, ...)
+    local item= table.concat{...}
+    local cnt= ffpush(item)
+    if cnt>limit then
+        return ffpull()
+    end
+end
+
+local cols= {
+    ["<"]= "\027[31m", -- \027 ist the escape byte (see ASCII table).
+    [">"]= "\027[32m", -- It gets produced when  echo -e "\033... "
+    ["|"]= "\027[36m", -- is done on the shell (tested)
+}
+local nodiffcol= "\027[37m"
+local coloff= "\027[0m\n"
+
+local diffcmd="diff -Npryt "
+local diffcmdlen= diffcmd:len()
+
+local aftermath, lnuml, lnumr
+local firstfile= true
+
+local function diffreset()
+    aftermath= 0
+    lnuml= 0
+    lnumr= 0
+end
+diffreset()
+
+for line in io.popen(diffcmd..arg[1].." "..arg[2]):lines() do
+    if line:sub(1, diffcmdlen) == diffcmd then -- Start of a file:
+        if firstfile then
+            firstfile= false
+        else
+            io.write("\n")
+        end
+        io.write(line, "\n")
+        ffreset()
+        diffreset()
+        goto continue
+    end
+    lnuml= lnuml+1
+    lnumr= lnumr+1
+    local token=line:sub(65,65)
+    local diffcol= cols[token]
+    if diffcol then -- lines differ:
+        for preline in ffpull do -- drain fifo
+            io.write(preline)
+        end
+        if token=="<" then
+            lnumr= lnumr-1
+        elseif token==">" then
+            lnuml= lnuml-1
+        end
+        io.write(lnuml, " ", lnumr, " ", diffcol, line, coloff)
+        aftermath= CONTEXT
+        goto continue
+    end -- lines are the same:
+    if aftermath > 0 then -- need to write context of last difference
+        io.write(lnuml, " ", lnumr, " ", nodiffcol, line, coloff)
+        aftermath= aftermath-1
+        goto continue
+    end  -- store context for next difference:
+    pushmax(CONTEXT, lnuml, " ", lnumr, " ", nodiffcol, line, coloff)
+    ::continue::
+end
