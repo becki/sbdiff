@@ -82,7 +82,7 @@ end
 
 -- make left spacer for empy lines:
 local spaces= {}
-for i= 1,DIFFPOS do spaces[#spaces+1]= " " end
+for i= 1,DIFFPOS-1 do spaces[#spaces+1]= " " end
 spaces= table.concat(spaces)
 
 ffreset()
@@ -114,16 +114,16 @@ for line in io.popen(diffcmd..arg[1].." "..arg[2]):lines() do
         elseif token==">" then
             lnuml= lnuml-1
         end
-        io.write(diffcol, lnuml, " ", left, token, " ", lnumr, right, coloff)
+        io.write(diffcol, lnuml, " ", left, lnumr, right, coloff)
         aftermath= CONTEXT
         goto continue
     end -- lines are the same:
     left= (left == "") and spaces or left -- fix empty lines
     if aftermath > 0 then -- need to write context of last difference
-        io.write(nodiffcol, lnuml, " ", left, token, " ", lnumr, right, coloff)
+        io.write(nodiffcol, lnuml, " ", left, lnumr, right, coloff)
         aftermath= aftermath-1
         goto continue
     end  -- store context for next difference:
-    pushmax(CONTEXT, nodiffcol, lnuml, " ", left, token, " ", lnumr, right, coloff)
+    pushmax(CONTEXT, nodiffcol, lnuml, " ", left, lnumr, right, coloff)
     ::continue::
 end
