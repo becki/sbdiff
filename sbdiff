@@ -24,112 +24,142 @@
 
 
 local DIFFPOS= 65 -- fixme: Does diff command always place it in that column?
-local CONTEXT= 3
 
-local fifo, ffstart, ffcnt
-
-local function ffreset()
-    fifo= {}
-    ffstart= 1
-    ffcnt= 0
+local function ffnew()
+    return {
+        fifo= {},
+        start= 1,
+        cnt= 0
+    }
 end
 
-local function ffpush(item)
-    assert(ffcnt>=0 and ffstart>=1)
+local function ffpush(ff, item)
+    assert(ff.cnt>=0 and ff.start>=1)
     assert(item~=nil, "Not allowed to push nil")
-    fifo[ffstart+ffcnt]= item
-    ffcnt= ffcnt+1
-    return ffcnt
+    ff.fifo[ff.start+ff.cnt]= item
+    ff.cnt= ff.cnt+1
+    return ff.cnt
 end
 
-local function ffpull()
-    assert(ffcnt>=0 and ffstart>=1)
-    if ffcnt==0 then return nil end
-    local item= fifo[ffstart]
-    fifo[ffstart]= nil
-    ffcnt= ffcnt-1
-    ffstart= (ffcnt==0) and 1 or ffstart+1
-    return item, ffcnt
+local function ffpull(ff)
+    assert(ff.cnt>=0 and ff.start>=1)
+    if ff.cnt==0 then return nil end
+    local item= ff.fifo[ff.start]
+    ff.fifo[ff.start]= nil
+    ff.cnt= ff.cnt-1
+    ff.start= (ff.cnt==0) and 1 or ff.start+1
+    return item, ff.cnt
 end
 
-local function pushmax(limit, ...)
-    local item= table.concat{...}
-    local cnt= ffpush(item)
-    if cnt>limit then
-        return ffpull()
-    end
-end
-
-local cols= {
-    ["<"]= "\027[31m", -- \027 ist the escape byte (see ASCII table).
-    [">"]= "\027[32m", -- It gets produced when  echo -e "\033... "
-    ["|"]= "\027[36m", -- is done on the shell (tested)
-}
 local nodiffcol = "\027[37m"
-local newfilecol= "\027[35m"
+local newfilecol= "\027[1m"
+local newdiffcol= "\027[35m"
+local removedcol= "\027[31m"
+local addedcol  = "\027[32m"
+local removebcol= "\027[31;1m"
+local addedbcol = "\027[32;1m"
+local differscol= "\027[36m"
 local coloff    = "\027[0m\n"
 
-local diffcmd= "diff -Npryt "
+local diffcmd= "diff -urt "
 local diffcmdlen= diffcmd:len()
-local binfile= "Binary files "
-local binfilelen= binfile:len()
 
-local aftermath, lnuml, lnumr, firstdiff
-
-local function diffreset()
-    aftermath= 0
-    lnuml= 0
-    lnumr= 0
-    firstdiff= true
+local function getspace(len)
+    if len <= 0 then return "" end
+    local spaces= {}
+    for i= 1,len do spaces[#spaces+1]= " " end
+    return table.concat(spaces)
 end
 
--- make left spacer for empy lines:
-local spaces= {}
-for i= 1,DIFFPOS-1 do spaces[#spaces+1]= " " end
-spaces= table.concat(spaces)
+local function trim(str, len)
+    str= str:sub(1, len)
+    return str..getspace(len-str:len())
+end
 
-ffreset()
-diffreset()
-for line in io.popen("LANG=en_US "..diffcmd..arg[1].." "..arg[2]):lines() do
-    if line:sub(1, diffcmdlen) == diffcmd 
-    or line:sub(1, binfilelen) == binfile then -- Start of a file:
-        io.write(newfilecol, line, coloff)
-        ffreset()
-        diffreset()
-        goto continue
+local function addleft(line)
+    local item= {line, ""}
+    ffpush(item)
+end
+
+local function addright(line)
+    local item= {"", line}
+    ffpush(item)
+end
+
+local ffleft, ffright
+
+local function pull()
+    local left= ffpull(ffleft)
+    local right= ffpull(ffright)
+    if left==nil and right==nil then
+        return nil 
     end
-    lnuml= lnuml+1
-    lnumr= lnumr+1
-    local left = line:sub(1, DIFFPOS-1)
-    local token= line:sub(DIFFPOS, DIFFPOS)
-    local right= line:sub(DIFFPOS+2)
-    local diffcol= cols[token]
-    if diffcol then -- lines differ:
-        for preline, n in ffpull do -- drain fifo
-            if n == CONTEXT then
-                if not firstdiff then 
-                    io.write(newfilecol, "@@@", coloff)
+    assert(left or right)
+    return {[1]=left, [2]=right}
+end
+
+local function reset()
+    ffleft = ffnew()
+    ffright= ffnew()
+end
+
+local function purgediffs()
+    for item in pull do
+        assert(type(item=="table"))
+        assert(next(item))
+        if item[1] and item[2] then
+            io.write(differscol, trim(item[1],DIFFPOS), "  ", trim(item[2],DIFFPOS), coloff)
+        elseif item[1] then
+            assert(item[2]==nil)
+            io.write(removedcol, trim(item[1],DIFFPOS), "  ", trim("",DIFFPOS), coloff)
+        elseif item[2] then
+            assert(item[1]==nil)
+            io.write(addedcol, trim("",DIFFPOS), "  ", trim(item[2],DIFFPOS), coloff)
+        else
+            assert(false)
+        end
+    end
+    reset()
+end
+
+
+local function corobody(line)
+    while true do -- each file:
+        if line:sub(1, diffcmdlen) == diffcmd then
+            io.write(newfilecol, line, coloff)
+        end
+        io.write(removebcol, coroutine.yield(), coloff)
+        io.write(addedbcol,  coroutine.yield(), coloff)
+        line= coroutine.yield()
+        while true do -- each diffsection:
+            io.write(newdiffcol, line, coloff)
+            while true do -- each line:
+                line= coroutine.yield()
+                local col1= line:sub(1, 1)
+                if col1 == "d" then
+                    goto nextfile
+                elseif col1 == "@" then
+                    goto nextdiff
                 end
-            else
-                io.write(preline)
+                line= line:sub(2, DIFFPOS)
+                if col1 == " " then
+                    purgediffs()
+                    io.write(nodiffcol, trim(line,DIFFPOS), "  ", trim(line,DIFFPOS), coloff)
+                elseif col1 == "-" then
+                    ffpush(ffleft, line)
+                else
+                    assert(col1 == "+")
+                    ffpush(ffright, line)
+                end
             end
+        ::nextdiff::
         end
-        firstdiff= false
-        if token=="<" then
-            lnumr= lnumr-1
-        elseif token==">" then
-            lnuml= lnuml-1
-        end
-        io.write(diffcol, lnuml, " ", left, lnumr, right, coloff)
-        aftermath= CONTEXT
-        goto continue
-    end -- lines are the same:
-    left= (left == "") and spaces or left -- fix empty lines
-    if aftermath > 0 then -- need to write context of last difference
-        io.write(nodiffcol, lnuml, " ", left, lnumr, right, coloff)
-        aftermath= aftermath-1
-        goto continue
-    end  -- store context for next difference:
-    pushmax(CONTEXT+1, nodiffcol, lnuml, " ", left, lnumr, right, coloff)
-    ::continue::
+    ::nextfile::
+    end
+end
+
+reset()
+local coro= coroutine.create(corobody)
+for line in io.popen(diffcmd..arg[1].." "..arg[2]):lines() do
+    assert(coroutine.resume(coro, line))
 end
