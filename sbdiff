@@ -122,9 +122,10 @@ local function corobody(line)
     while true do -- each file:
         if line:sub(1, diffcmdlen) == diffcmd then
             io.write(newfilecol, line, coloff)
+            line= coroutine.yield()
         end
-        io.write(removebcol, coroutine.yield(), coloff)
-        io.write(addedbcol,  coroutine.yield(), coloff)
+        io.write(removebcol, line, coloff)
+        io.write(addedbcol, coroutine.yield(), coloff)
         line= coroutine.yield()
         while true do -- each diffsection:
             io.write(newdiffcol, line, coloff)
@@ -156,6 +157,7 @@ end
 reset()
 local coro= coroutine.create(corobody)
 for line in io.popen(diffcmd..arg[1].." "..arg[2]):lines() do
-    --print(line)
+    --assert(line:sub(-1)~="\n")
+    --print("==>"..line)
     assert(coroutine.resume(coro, line))
 end
