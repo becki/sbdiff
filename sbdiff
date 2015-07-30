@@ -62,11 +62,17 @@ local function ffpull(ff)
     return item, ff.cnt
 end
 
+local spacecache= {}
+
 local function getspace(len)
     if len <= 0 then return "" end
-    local spaces= {}
+    local spaces= spacecache[len]
+    if spaces then return spaces end
+    spaces= {}
     for i= 1,len do spaces[#spaces+1]= " " end
-    return table.concat(spaces)
+    spaces= table.concat(spaces)
+    spacecache[len]= spaces
+    return spaces
 end
 
 local function trim(str)
@@ -150,5 +156,6 @@ end
 reset()
 local coro= coroutine.create(corobody)
 for line in io.popen(diffcmd..arg[1].." "..arg[2]):lines() do
+    --print(line)
     assert(coroutine.resume(coro, line))
 end
