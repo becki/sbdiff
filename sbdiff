@@ -90,8 +90,9 @@ local function pull()
     if left==nil and right==nil then
         return nil 
     end
-    assert(left or right)
-    return {[1]=left, [2]=right}
+    left= left or ""
+    right= right or ""
+    return {left, right}
 end
 
 local function reset()
@@ -99,23 +100,27 @@ local function reset()
     ffright= ffnew()
 end
 
+local lnum, rnum
+
 local function purgediffs()
-    for item in pull do
-        assert(type(item=="table"))
-        assert(next(item))
-        if item[1] and item[2] then
-            io.write(differscol, trim(item[1]), "  ", trim(item[2]), coloff)
-        elseif item[1] then
-            assert(item[2]==nil)
-            io.write(removedcol, trim(item[1]), "  ", coloff)
-        elseif item[2] then
-            assert(item[1]==nil)
-            io.write(addedcol, trim(""), "  ", trim(item[2]), coloff)
-        else
-            assert(false)
-        end
+    if ffleft.cnt == 0 and ffright.cnt == 0 then 
+        return
     end
-    reset()
+    local color= addedcol
+    if ffleft.cnt > 0 and ffright.cnt > 0 then
+        color= differscol
+    elseif ffleft.cnt > 0 then
+        color= removedcol
+    else
+        assert(ffleft.cnt == 0 and ffright.cnt > 0)
+    end
+    for item in pull do
+        assert(type(item=="table") and next(item))
+        io.write(color, lnum, " ", trim(item[1]), " ", rnum, " ", trim(item[2]), coloff)
+        if item[1] ~= "" then lnum= lnum+1 end
+        if item[2] ~= "" then rnum= rnum+1 end
+    end
+    --reset()
 end
 
 local function corobody(line)
@@ -128,19 +133,24 @@ local function corobody(line)
         io.write(addedbcol, coroutine.yield(), coloff)
         line= coroutine.yield()
         while true do -- each diffsection:
+            -- get line number
+            lnum, rnum= line:match("@@ %-(%d+),%d+ %+(%d+),%d+ @@")
+            --print(lnum, rnum)
             io.write(newdiffcol, line, coloff)
             while true do -- each line:
                 line= coroutine.yield()
                 local col1= line:sub(1, 1)
                 if col1 == "d" then
-                    goto nextfile
+                    goto nextfile -- multistep continue
                 elseif col1 == "@" then
-                    goto nextdiff
+                    goto nextdiff -- multistep continue
                 end
                 line= line:sub(2, DIFFPOS)
                 if col1 == " " then
                     purgediffs()
-                    io.write(nodiffcol, trim(line,DIFFPOS), "  ", trim(line,DIFFPOS), coloff)
+                    io.write(nodiffcol, lnum, " ", trim(line,DIFFPOS), " ", rnum, " ", trim(line,DIFFPOS), coloff)
+                    lnum= lnum+1
+                    rnum= rnum+1
                 elseif col1 == "-" then
                     ffpush(ffleft, line)
                 else
