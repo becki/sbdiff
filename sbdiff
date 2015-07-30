@@ -114,10 +114,12 @@ local function purgediffs()
     end
     for item in pull do
         assert(type(item=="table") and next(item))
-        local left, right= trim(item[1] or ""), trim(item[2] or "")
-        io.write(color, lnum, " ", left, " ", rnum, " ", right, coloff)
-        if item[1] then lnum= lnum+1 end
-        if item[2] then rnum= rnum+1 end
+        local itl, itr= item[1], item[2]
+        local ln= itl and lnum or getspace(#(string.format("%d",lnum)))
+        local rn= itr and rnum or getspace(#(string.format("%d",rnum)))
+        io.write(color,ln," ",trim(itl or "")," ",rn," ",trim(itr or ""),coloff)
+        if itl then lnum= lnum+1 end
+        if itr then rnum= rnum+1 end
     end
 end
 
