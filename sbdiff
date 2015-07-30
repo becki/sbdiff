@@ -90,8 +90,6 @@ local function pull()
     if left==nil and right==nil then
         return nil 
     end
-    left= left or ""
-    right= right or ""
     return {left, right}
 end
 
@@ -116,11 +114,11 @@ local function purgediffs()
     end
     for item in pull do
         assert(type(item=="table") and next(item))
-        io.write(color, lnum, " ", trim(item[1]), " ", rnum, " ", trim(item[2]), coloff)
-        if item[1] ~= "" then lnum= lnum+1 end
-        if item[2] ~= "" then rnum= rnum+1 end
+        local left, right= trim(item[1] or ""), trim(item[2] or "")
+        io.write(color, lnum, " ", left, " ", rnum, " ", right, coloff)
+        if item[1] then lnum= lnum+1 end
+        if item[2] then rnum= rnum+1 end
     end
-    --reset()
 end
 
 local function corobody(line)
