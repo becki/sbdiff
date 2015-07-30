@@ -121,10 +121,12 @@ local function purgediffs()
         if itl then lnum= lnum+1 end
         if itr then rnum= rnum+1 end
     end
+    return true
 end
 
 local function corobody(line)
     while true do -- each file:
+        purgediffs() -- print pending diffs at end of last file
         if line:sub(1, diffcmdlen) == diffcmd then
             io.write(newfilecol, line, coloff)
             line= coroutine.yield()
@@ -138,9 +140,9 @@ local function corobody(line)
         io.write(addedbcol, coroutine.yield(), coloff)
         line= coroutine.yield()
         while true do -- each diffsection:
-            -- get line number
+            assert(not purgediffs())
+            -- get line number:
             lnum, rnum= line:match("@@ %-(%d+),%d+ %+(%d+),%d+ @@")
-            --print(lnum, rnum)
             io.write(newdiffcol, line, coloff)
             while true do -- each line:
                 line= coroutine.yield()
@@ -160,6 +162,9 @@ local function corobody(line)
                     ffpush(ffleft, ine)
                 elseif col1 == "+" then
                     ffpush(ffright, ine)
+                elseif col1 == "\\" then -- no line feed at EOF
+                    -- !!! Should be printed after end of diff push phase !!!
+                    io.write(line, "\n")
                 else
                     goto nextfile -- multistep continue
                 end
