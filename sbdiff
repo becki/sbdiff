@@ -22,8 +22,19 @@
 -- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 -- THE SOFTWARE.
 
+-- SETTINGS START
+local DIFFPOS= 65
 
-local DIFFPOS= 65 -- fixme: Does diff command always place it in that column?
+local nodiffcol = "\027[37m"
+local newfilecol= "\027[1m"
+local newdiffcol= "\027[35m"
+local removedcol= "\027[31m"
+local addedcol  = "\027[32m"
+local removebcol= "\027[31;1m"
+local addedbcol = "\027[32;1m"
+local differscol= "\027[36m"
+local coloff    = "\027[0m\n"
+-- SETTINGS END
 
 local function ffnew()
     return {
@@ -51,19 +62,6 @@ local function ffpull(ff)
     return item, ff.cnt
 end
 
-local nodiffcol = "\027[37m"
-local newfilecol= "\027[1m"
-local newdiffcol= "\027[35m"
-local removedcol= "\027[31m"
-local addedcol  = "\027[32m"
-local removebcol= "\027[31;1m"
-local addedbcol = "\027[32;1m"
-local differscol= "\027[36m"
-local coloff    = "\027[0m\n"
-
-local diffcmd= "diff -urt "
-local diffcmdlen= diffcmd:len()
-
 local function getspace(len)
     if len <= 0 then return "" end
     local spaces= {}
@@ -71,21 +69,13 @@ local function getspace(len)
     return table.concat(spaces)
 end
 
-local function trim(str, len)
-    str= str:sub(1, len)
-    return str..getspace(len-str:len())
+local function trim(str)
+    str= str:sub(1, DIFFPOS)
+    return str..getspace(DIFFPOS-str:len())
 end
 
-local function addleft(line)
-    local item= {line, ""}
-    ffpush(item)
-end
-
-local function addright(line)
-    local item= {"", line}
-    ffpush(item)
-end
-
+local diffcmd= "diff -urt "
+local diffcmdlen= diffcmd:len()
 local ffleft, ffright
 
 local function pull()
@@ -108,20 +98,19 @@ local function purgediffs()
         assert(type(item=="table"))
         assert(next(item))
         if item[1] and item[2] then
-            io.write(differscol, trim(item[1],DIFFPOS), "  ", trim(item[2],DIFFPOS), coloff)
+            io.write(differscol, trim(item[1]), "  ", trim(item[2]), coloff)
         elseif item[1] then
             assert(item[2]==nil)
-            io.write(removedcol, trim(item[1],DIFFPOS), "  ", trim("",DIFFPOS), coloff)
+            io.write(removedcol, trim(item[1]), "  ", coloff)
         elseif item[2] then
             assert(item[1]==nil)
-            io.write(addedcol, trim("",DIFFPOS), "  ", trim(item[2],DIFFPOS), coloff)
+            io.write(addedcol, trim(""), "  ", trim(item[2]), coloff)
         else
             assert(false)
         end
     end
     reset()
 end
-
 
 local function corobody(line)
     while true do -- each file:
