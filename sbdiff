@@ -77,7 +77,7 @@ end
 
 local function trim(str)
     str= str:sub(1, DIFFPOS)
-    return str..getspace(DIFFPOS-str:len())
+    return str..getspace(DIFFPOS - utf8.len(str))
 end
 
 local diffcmd= "diff -Nurt "
