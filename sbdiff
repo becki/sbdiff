@@ -75,9 +75,11 @@ local function getspace(len)
     return spaces
 end
 
+local strlen = utf8 and utf8.len or str.len
+
 local function trim(str)
     str= str:sub(1, DIFFPOS)
-    return str..getspace(DIFFPOS - utf8.len(str))
+    return str..getspace(DIFFPOS - strlen(str))
 end
 
 local diffcmd= "diff -Nurt "
