@@ -182,3 +182,4 @@ for line in io.popen(diffcmd..arg[1].." "..arg[2]):lines() do
     --print("==>"..line)
     assert(coroutine.resume(coro, line))
 end
+purgediffs()
