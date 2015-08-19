@@ -23,7 +23,7 @@
 -- THE SOFTWARE.
 
 -- SETTINGS START
-local DIFFPOS= 65
+local DIFFPOS= 63
 
 local nodiffcol = "\027[37m"
 local newfilecol= "\027[1m"
