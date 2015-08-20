@@ -36,6 +36,8 @@ local differscol= "\027[36m"
 local coloff    = "\027[0m\n"
 -- SETTINGS END
 
+local center
+
 local function ffnew()
     return {
         fifo= {},
@@ -77,9 +79,11 @@ end
 
 local strlen = utf8 and utf8.len or str.len
 
-local function trim(str)
-    str= str:sub(1, DIFFPOS)
-    return str..getspace(DIFFPOS - strlen(str))
+local function trim(num, str)
+    num= type(num)=="number" and string.format("%d", num) or num
+    str= num.." "..(str or "")
+    str= str:sub(1, center-1)
+    return str..getspace(center - strlen(str))
 end
 
 local diffcmd= "diff -Nurt "
@@ -119,7 +123,7 @@ local function purgediffs()
         local itl, itr= item[1], item[2]
         local ln= itl and lnum or getspace(#(string.format("%d",lnum)))
         local rn= itr and rnum or getspace(#(string.format("%d",rnum)))
-        io.write(color,ln," ",trim(itl or "")," ",rn," ",trim(itr or ""),coloff)
+        io.write(color, trim(ln, itl), trim(rn, itr),coloff)
         if itl then lnum= lnum+1 end
         if itr then rnum= rnum+1 end
     end
@@ -154,10 +158,10 @@ local function corobody(line)
                 elseif col1 == "@" then
                     goto nextdiff -- multistep continue
                 end
-                local ine= line:sub(2, DIFFPOS)
+                local ine= line:sub(2)
                 if col1 == " " then
                     purgediffs()
-                    io.write(nodiffcol,lnum," ",trim(ine)," ",rnum," ",trim(ine),coloff)
+                    io.write(nodiffcol, trim(lnum,ine), trim(rnum,ine), coloff)
                     lnum= lnum+1
                     rnum= rnum+1
                 elseif col1 == "-" then
@@ -176,6 +180,10 @@ local function corobody(line)
     ::nextfile::
     end
 end
+
+center= tonumber(io.popen("tput cols"):read()) or DIFFPOS*2
+if center<5 then center= 65 end
+center= math.floor(center/2)
 
 reset()
 local coro= coroutine.create(corobody)
