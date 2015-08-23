@@ -23,7 +23,7 @@
 -- THE SOFTWARE.
 
 -- SETTINGS START
-local DIFFPOS= 63
+local CENTER= 63
 
 local nodiffcol = "\027[37m"
 local newfilecol= "\027[1m"
@@ -181,7 +181,7 @@ local function corobody(line)
     end
 end
 
-center= tonumber(io.popen("tput cols"):read()) or DIFFPOS*2
+center= tonumber(io.popen("tput cols"):read()) or CENTER*2
 if center<5 then center= 65 end
 center= math.floor(center/2)
 
