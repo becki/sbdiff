@@ -1,5 +1,7 @@
 # sbdiff
 
+![sbdiff output](sbdiff.png)
+
 sbdiff is a frontend for (GNU) `diff`.
 
 It compares files line by line, outputs the files side-by-side in two columns and colorizes the differences.
