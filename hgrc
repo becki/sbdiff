@@ -1,0 +1,5 @@
+# Template to integrate sbdiff into mercurial as external diff tool.
+# Append this file to your $HOME/.hgrc or copy it to /etc/mercurial/hgrc.d/
+#
+[extdiff]
+cmd.sbdiff=
