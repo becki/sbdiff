@@ -148,7 +148,7 @@ local function corobody(line)
         while true do -- each diffsection:
             assert(not purgediffs())
             -- get line number:
-            lnum, rnum= line:match("@@ %-(%d+),%d+ %+(%d+),%d+ @@")
+            lnum, rnum= line:match("@@ %-(%d+).* %+(%d+).* @@")
             io.write(newdiffcol, line, coloff)
             while true do -- each line:
                 line= coroutine.yield()
