@@ -23,8 +23,7 @@
 -- THE SOFTWARE.
 
 -- SETTINGS START
-local CENTER= 63
-
+local CENTER    = 63
 local nodiffcol = "\027[37m"
 local newfilecol= "\027[1m"
 local newdiffcol= "\027[35m"
@@ -35,8 +34,6 @@ local addedbcol = "\027[32;1m"
 local differscol= "\027[36m"
 local coloff    = "\027[0m\n"
 -- SETTINGS END
-
-local center
 
 local function ffnew()
     return {
@@ -64,6 +61,13 @@ local function ffpull(ff)
     return item, ff.cnt
 end
 
+-- Chunk-Globals:
+local center
+local diffcmd= "diff -Nurt "
+local diffcmdlen= diffcmd:len()
+local ffleft, ffright
+local lnum, rnum
+local strlen = utf8 and utf8.len or str.len
 local spacecache= {}
 
 local function getspace(len)
@@ -77,8 +81,6 @@ local function getspace(len)
     return spaces
 end
 
-local strlen = utf8 and utf8.len or str.len
-
 local function trim(num, str)
     num= type(num)=="number" and string.format("%d", num) or num
     str= num.." "..(str or "")
@@ -86,25 +88,14 @@ local function trim(num, str)
     return str..getspace(center - strlen(str))
 end
 
-local diffcmd= "diff -Nurt "
-local diffcmdlen= diffcmd:len()
-local ffleft, ffright
-
 local function pull()
     local left= ffpull(ffleft)
     local right= ffpull(ffright)
     if left==nil and right==nil then
-        return nil 
+        return nil
     end
     return {left, right}
 end
-
-local function reset()
-    ffleft = ffnew()
-    ffright= ffnew()
-end
-
-local lnum, rnum
 
 local function purgediffs()
     if ffleft.cnt == 0 and ffright.cnt == 0 then 
@@ -187,7 +178,8 @@ center= tonumber(io.popen("tput cols"):read()) or CENTER*2
 if center<5 then center= 65 end
 center= math.floor(center/2)
 
-reset()
+ffleft = ffnew()
+ffright= ffnew()
 local coro= coroutine.create(corobody)
 for line in io.popen(diffcmd.."'"..arg[1].."' '"..arg[2].."'"):lines() do
     assert(coroutine.resume(coro, line))
