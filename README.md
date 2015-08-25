@@ -5,7 +5,12 @@
 sbdiff is a frontend for (GNU) `diff`.
 
 It compares files and directories line by line, outputs the files side-by-side in two columns and colorizes the differences.
-For it is a console application, no GUI is necessary.
+Because it is a console application, no GUI is necessary.
+
+The code is available at:
+
+* [https://bitbucket.org/becki/sbdiff](https://bitbucket.org/becki/sbdiff) (primary)
+* [https://github.com/becki/sbdiff](https://github.com/becki/sbdiff) (mirror)
 
 ## Install
 
