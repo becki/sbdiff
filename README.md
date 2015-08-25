@@ -18,13 +18,14 @@ In order to use it, you need [Lua](http://lua.org/) 5.2 or newer and the `diff` 
 
 Then just copy the file `sbdiff` e.g. to `/usr/local/bin/`.
 
-## Usage
+## Standalone Usage
 
-Type `sbdiff file1 file2` to see the differences between file1 and file2.
+Type `sbdiff foo bar` to see the differences between file foo and file bar or directory foo and directory bar.
 
 ## Integration with Mercurial
 
-Append the file `hgrc` to your `$HOME/.hgrc` or copy it to `/etc/mercurial/hgrc.d/sbdiff`
+* Per user: Append the file `sbdiffhg.rc` to your `$HOME/.hgrc`
+* Or for all users: Copy `sbdiffhg.rc` into `/etc/mercurial/hgrc.d/`
 
 Then you can use sbdiff within Mercurial as external diff command:
 
