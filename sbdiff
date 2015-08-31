@@ -67,7 +67,6 @@ local diffcmd= "diff -Nurt "
 local diffcmdlen= diffcmd:len()
 local ffleft, ffright
 local lnum, rnum
-local strlen = utf8 and utf8.len or str.len
 local spacecache= {}
 
 local function getspace(len)
@@ -81,19 +80,34 @@ local function getspace(len)
     return spaces
 end
 
-local function trim(num, str)
+local function utf8len(str)
+    return assert(utf8.len(str))
+end
+
+local function utf8prefix(str, len)
+    local pos= utf8.offset(str, len+1)
+    if pos then
+        str= str:sub(1, pos-1)
+    end
+    return str
+end
+
+local function simpleprefix(str, len)
+    return str:sub(1, len)
+end
+
+string.reallen= utf8 and utf8len or string.len
+string.prefix = utf8 and utf8prefix or simpleprefix
+
+local function maxlen(num, str)
     num= type(num)=="number" and string.format("%d", num) or num
     str= num.." "..(str or "")
-    if utf8 then
-        local pos= utf8.offset(str, center)
-        if pos then
-            str= str:sub(1, pos-1)
-        end
-    else
-        str= str:sub(1, center-1)
-    end
-    local len= assert(strlen(str))
-    return str..getspace(center - len)
+    return str:prefix(center-1)
+end
+
+local function tolen(num, str)
+    str= maxlen(num, str)
+    return str..getspace(center - str:reallen())
 end
 
 local function pull()
@@ -122,7 +136,7 @@ local function purgediffs()
         local itl, itr= item[1], item[2]
         local ln= itl and lnum or getspace(#(string.format("%d",lnum)))
         local rn= itr and rnum or getspace(#(string.format("%d",rnum)))
-        io.write(color, trim(ln, itl), trim(rn, itr),coloff)
+        io.write(color, tolen(ln, itl), maxlen(rn, itr),coloff)
         if itl then lnum= lnum+1 end
         if itr then rnum= rnum+1 end
     end
@@ -160,7 +174,7 @@ local function corobody(line)
                 local ine= line:sub(2)
                 if col1 == " " then
                     purgediffs()
-                    io.write(nodiffcol, trim(lnum,ine), trim(rnum,ine), coloff)
+                    io.write(nodiffcol,tolen(lnum,ine),maxlen(rnum,ine),coloff)
                     lnum= lnum+1
                     rnum= rnum+1
                 elseif col1 == "-" then
