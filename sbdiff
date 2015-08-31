@@ -182,6 +182,13 @@ ffleft = ffnew()
 ffright= ffnew()
 local coro= coroutine.create(corobody)
 for line in io.popen(diffcmd.."'"..arg[1].."' '"..arg[2].."'"):lines() do
+    -- remove trailing garbage from CRLF etc ending files:
+    while true do
+        local last= line:sub(-1)
+        if last ~= "\n" and last ~= "\r" then break end
+        line= line:sub(1, -2)
+    end
+    --io.write(line, "\n")
     assert(coroutine.resume(coro, line))
 end
 purgediffs()
