@@ -84,8 +84,16 @@ end
 local function trim(num, str)
     num= type(num)=="number" and string.format("%d", num) or num
     str= num.." "..(str or "")
-    str= str:sub(1, center-1)
-    return str..getspace(center - strlen(str))
+    if utf8 then
+        local pos= utf8.offset(str, center)
+        if pos then
+            str= str:sub(1, pos-1)
+        end
+    else
+        str= str:sub(1, center-1)
+    end
+    local len= assert(strlen(str))
+    return str..getspace(center - len)
 end
 
 local function pull()
