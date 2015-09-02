@@ -143,6 +143,32 @@ local function purgediffs()
     return true
 end
 
+local function each_line()
+    local line= coroutine.yield()
+    local col1= line:sub(1, 1)
+    if col1 == "d" then
+        return "nextfile", line -- multistep continue
+    elseif col1 == "@" then
+        return "nextdiff", line -- continue
+    end
+    local ine= line:sub(2)
+    if col1 == " " then
+        purgediffs()
+        io.write(nodiffcol,tolen(lnum,ine),maxlen(rnum,ine),coloff)
+        lnum= lnum+1
+        rnum= rnum+1
+    elseif col1 == "-" then
+        ffpush(ffleft, ine)
+    elseif col1 == "+" then
+        ffpush(ffright, ine)
+    elseif col1 == "\\" then -- no line feed at EOF
+        -- !!! Should be printed after end of diff push phase !!!
+        io.write(line, "\n")
+    else
+        return "nextfile", line -- multistep continue
+    end
+end
+
 local function corobody(line)
     while true do -- each file:
         purgediffs() -- print pending diffs at end of last file
@@ -163,32 +189,9 @@ local function corobody(line)
             -- get line number:
             lnum, rnum= line:match("@@ %-(%d+).* %+(%d+).* @@")
             io.write(newdiffcol, line, coloff)
-            while true do -- each line:
-                line= coroutine.yield()
-                local col1= line:sub(1, 1)
-                if col1 == "d" then
-                    goto nextfile -- multistep continue
-                elseif col1 == "@" then
-                    goto nextdiff -- multistep continue
-                end
-                local ine= line:sub(2)
-                if col1 == " " then
-                    purgediffs()
-                    io.write(nodiffcol,tolen(lnum,ine),maxlen(rnum,ine),coloff)
-                    lnum= lnum+1
-                    rnum= rnum+1
-                elseif col1 == "-" then
-                    ffpush(ffleft, ine)
-                elseif col1 == "+" then
-                    ffpush(ffright, ine)
-                elseif col1 == "\\" then -- no line feed at EOF
-                    -- !!! Should be printed after end of diff push phase !!!
-                    io.write(line, "\n")
-                else
-                    goto nextfile -- multistep continue
-                end
-            end
-        ::nextdiff::
+            local stop
+            repeat stop, line= each_line() until stop
+            if stop == "nextfile" then goto nextfile end
         end
     ::nextfile::
     end
