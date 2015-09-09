@@ -24,15 +24,14 @@
 
 -- SETTINGS START
 local CENTER    = 63
-local nodiffcol = "\027[37m"
-local newfilecol= "\027[1m"
-local newdiffcol= "\027[35m"
-local removedcol= "\027[31m"
-local addedcol  = "\027[32m"
-local removebcol= "\027[31;1m"
-local addedbcol = "\027[32;1m"
-local differscol= "\027[36m"
-local coloff    = "\027[0m\n"
+local NODIFFCOL = "\027[37m"
+local NEWFILECOL= "\027[1m"
+local NEWDIFFCOL= "\027[35m"
+local REMOVEDCOL= "\027[31m"
+local ADDEDCOL  = "\027[32m"
+local REMOVEBCOL= "\027[31;1m"
+local ADDEDBCOL = "\027[32;1m"
+local DIFFERSCOL= "\027[36m"
 -- SETTINGS END
 
 local ffproto= {}
@@ -70,6 +69,7 @@ local function ffnew()
 end
 
 -- Chunk-Globals:
+local COLOFF    = "\027[0m\n"
 local center
 local diffcmd= "diff -Nurt "
 local diffcmdlen= diffcmd:len()
@@ -128,8 +128,8 @@ local function pull()
 end
 
 local colorsByColumnCount= {
-    [true] = {[true]= differscol, [false]= removedcol},
-    [false]= {[true]= addedcol}
+    [true] = {[true]= DIFFERSCOL, [false]= REMOVEDCOL},
+    [false]= {[true]= ADDEDCOL}
 }
 
 local function purgediffs()
@@ -140,7 +140,7 @@ local function purgediffs()
     for _, itl, itr in pull do
         local ln= itl and lnum or getspace(#(string.format("%d",lnum)))
         local rn= itr and rnum or getspace(#(string.format("%d",rnum)))
-        io.write(color, tolen(ln, itl), maxlen(rn, itr),coloff)
+        io.write(color, tolen(ln, itl), maxlen(rn, itr),COLOFF)
         if itl then lnum= lnum+1 end
         if itr then rnum= rnum+1 end
     end
@@ -158,7 +158,7 @@ local function each_line()
     local ine= line:sub(2)
     if col1 == " " then
         purgediffs()
-        io.write(nodiffcol,tolen(lnum,ine),maxlen(rnum,ine),coloff)
+        io.write(NODIFFCOL,tolen(lnum,ine),maxlen(rnum,ine),COLOFF)
         lnum= lnum+1
         rnum= rnum+1
     elseif col1 == "-" then
@@ -177,7 +177,7 @@ local function corobody(line)
     while true do -- each file:
         purgediffs() -- print pending diffs at end of last file
         if line:sub(1, diffcmdlen) == diffcmd then
-            io.write(newfilecol, line, coloff)
+            io.write(NEWFILECOL, line, COLOFF)
             line= coroutine.yield()
         end
         if line:sub(1,4) ~= "--- " then
@@ -185,14 +185,14 @@ local function corobody(line)
             line= coroutine.yield()
             goto nextfile -- continue
         end
-        io.write(removebcol, line, coloff)
-        io.write(addedbcol, coroutine.yield(), coloff)
+        io.write(REMOVEBCOL, line, COLOFF)
+        io.write(ADDEDBCOL, coroutine.yield(), COLOFF)
         line= coroutine.yield()
         while true do -- each diffsection:
             assert(not purgediffs())
             -- get line number:
             lnum, rnum= line:match("@@ %-(%d+).* %+(%d+).* @@")
-            io.write(newdiffcol, line, coloff)
+            io.write(NEWDIFFCOL, line, COLOFF)
             local stop
             repeat stop, line= each_line() until stop
             if stop == "nextfile" then goto nextfile end
