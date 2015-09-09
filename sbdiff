@@ -43,22 +43,25 @@ local function ffnew()
     }
 end
 
-local function ffpush(ff, item)
+local function ffcnt(ff)
     assert(ff.cnt>=0 and ff.start>=1)
-    assert(item~=nil, "Not allowed to push nil")
-    ff.fifo[ff.start+ff.cnt]= item
-    ff.cnt= ff.cnt+1
     return ff.cnt
 end
 
+local function ffpush(ff, item)
+    assert(item~=nil, "Not allowed to push nil")
+    ff.fifo[ff.start+ff.cnt]= item
+    ff.cnt= ff.cnt+1
+    return ffcnt(ff)
+end
+
 local function ffpull(ff)
-    assert(ff.cnt>=0 and ff.start>=1)
     if ff.cnt==0 then return nil end
     local item= ff.fifo[ff.start]
     ff.fifo[ff.start]= nil
     ff.cnt= ff.cnt-1
     ff.start= (ff.cnt==0) and 1 or ff.start+1
-    return item, ff.cnt
+    return item, ffcnt(ff)
 end
 
 -- Chunk-Globals:
@@ -125,8 +128,7 @@ local colorsByColumnCount= {
 }
 
 local function purgediffs()
-    assert(ffleft.cnt >= 0 and ffright.cnt >= 0)
-    local color= colorsByColumnCount[ffleft.cnt>0][ffright.cnt>0]
+    local color= colorsByColumnCount[ffcnt(ffleft)>0][ffcnt(ffright)>0]
     if not color then
         return
     end
