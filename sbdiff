@@ -35,33 +35,37 @@ local differscol= "\027[36m"
 local coloff    = "\027[0m\n"
 -- SETTINGS END
 
+local ffproto= {}
+
+function ffproto:count()
+    assert(self.cnt>=0 and self.start>=1)
+    return self.cnt
+end
+
+function ffproto:push(item)
+    assert(item~=nil, "Not allowed to push nil")
+    self.fifo[self.start+self.cnt]= item
+    self.cnt= self.cnt+1
+    return self:count()
+end
+
+function ffproto:pull()
+    if self.cnt==0 then return nil end
+    local item= self.fifo[self.start]
+    self.fifo[self.start]= nil
+    self.cnt= self.cnt-1
+    self.start= (self.cnt==0) and 1 or self.start+1
+    return item, self:count()
+end
+
 local function ffnew()
-    return {
+    local self= {
         fifo= {},
         start= 1,
         cnt= 0
     }
-end
-
-local function ffcnt(ff)
-    assert(ff.cnt>=0 and ff.start>=1)
-    return ff.cnt
-end
-
-local function ffpush(ff, item)
-    assert(item~=nil, "Not allowed to push nil")
-    ff.fifo[ff.start+ff.cnt]= item
-    ff.cnt= ff.cnt+1
-    return ffcnt(ff)
-end
-
-local function ffpull(ff)
-    if ff.cnt==0 then return nil end
-    local item= ff.fifo[ff.start]
-    ff.fifo[ff.start]= nil
-    ff.cnt= ff.cnt-1
-    ff.start= (ff.cnt==0) and 1 or ff.start+1
-    return item, ffcnt(ff)
+    setmetatable(self, {__index= ffproto})
+    return self
 end
 
 -- Chunk-Globals:
@@ -114,8 +118,8 @@ local function tolen(num, str)
 end
 
 local function pull()
-    local left= ffpull(ffleft)
-    local right= ffpull(ffright)
+    local left = ffleft:pull()
+    local right= ffright:pull()
     if left==nil and right==nil then
         return
     end
@@ -128,7 +132,7 @@ local colorsByColumnCount= {
 }
 
 local function purgediffs()
-    local color= colorsByColumnCount[ffcnt(ffleft)>0][ffcnt(ffright)>0]
+    local color= colorsByColumnCount[ffleft:count()>0][ffright:count()>0]
     if not color then
         return
     end
@@ -157,9 +161,9 @@ local function each_line()
         lnum= lnum+1
         rnum= rnum+1
     elseif col1 == "-" then
-        ffpush(ffleft, ine)
+        ffleft:push(ine)
     elseif col1 == "+" then
-        ffpush(ffright, ine)
+        ffright:push(ine)
     elseif col1 == "\\" then -- no line feed at EOF
         -- !!! Should be printed after end of diff push phase !!!
         io.write(line, "\n")
