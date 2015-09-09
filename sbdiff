@@ -114,22 +114,21 @@ local function pull()
     local left= ffpull(ffleft)
     local right= ffpull(ffright)
     if left==nil and right==nil then
-        return nil
+        return
     end
     return true, left, right
 end
 
+local colorsByColumnCount= {
+    [true] = {[true]= differscol, [false]= removedcol},
+    [false]= {[true]= addedcol}
+}
+
 local function purgediffs()
-    if ffleft.cnt == 0 and ffright.cnt == 0 then 
+    assert(ffleft.cnt >= 0 and ffright.cnt >= 0)
+    local color= colorsByColumnCount[ffleft.cnt>0][ffright.cnt>0]
+    if not color then
         return
-    end
-    local color= addedcol
-    if ffleft.cnt > 0 and ffright.cnt > 0 then
-        color= differscol
-    elseif ffleft.cnt > 0 then
-        color= removedcol
-    else
-        assert(ffleft.cnt == 0 and ffright.cnt > 0)
     end
     for _, itl, itr in pull do
         local ln= itl and lnum or getspace(#(string.format("%d",lnum)))
