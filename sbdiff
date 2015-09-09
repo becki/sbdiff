@@ -161,16 +161,19 @@ local function each_line()
         io.write(NODIFFCOL,tolen(lnum,ine),maxlen(rnum,ine),COLOFF)
         lnum= lnum+1
         rnum= rnum+1
+        return
     elseif col1 == "-" then
         ffleft:push(ine)
+        return
     elseif col1 == "+" then
         ffright:push(ine)
+        return
     elseif col1 == "\\" then -- no line feed at EOF
         -- !!! Should be printed after end of diff push phase !!!
         io.write(line, "\n")
-    else
-        return "nextfile", line -- multistep continue
+        return
     end
+    return "nextfile", line -- multistep continue
 end
 
 local function corobody(line)
