@@ -43,19 +43,20 @@ function ffproto:count()
 end
 
 function ffproto:push(item)
+    assert(self.cnt>=0 and self.start>=1)
     assert(item~=nil, "Not allowed to push nil")
     self.fifo[self.start+self.cnt]= item
     self.cnt= self.cnt+1
-    return self:count()
 end
 
 function ffproto:pull()
+    assert(self.cnt>=0 and self.start>=1)
     if self.cnt==0 then return nil end
     local item= self.fifo[self.start]
     self.fifo[self.start]= nil
     self.cnt= self.cnt-1
     self.start= (self.cnt==0) and 1 or self.start+1
-    return item, self:count()
+    return item
 end
 
 local function ffnew()
