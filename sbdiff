@@ -173,6 +173,7 @@ local function each_line()
         io.write(line, "\n")
         return
     end
+    io.write(NEWFILECOL, "ERROR: Unknown line start pattern", COLOFF)
     return "nextfile", line -- multistep continue
 end
 
