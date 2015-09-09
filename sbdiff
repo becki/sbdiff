@@ -116,7 +116,7 @@ local function pull()
     if left==nil and right==nil then
         return nil
     end
-    return {left, right}
+    return true, left, right
 end
 
 local function purgediffs()
@@ -131,9 +131,7 @@ local function purgediffs()
     else
         assert(ffleft.cnt == 0 and ffright.cnt > 0)
     end
-    for item in pull do
-        assert(type(item=="table") and next(item))
-        local itl, itr= item[1], item[2]
+    for _, itl, itr in pull do
         local ln= itl and lnum or getspace(#(string.format("%d",lnum)))
         local rn= itr and rnum or getspace(#(string.format("%d",rnum)))
         io.write(color, tolen(ln, itl), maxlen(rn, itr),coloff)
