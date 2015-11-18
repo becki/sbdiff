@@ -205,8 +205,6 @@ local function corobody(line)
     end
 end
 
-assert(arg[1] and arg[2], "Usage: sbdiff <dir1> <dir2>")
-
 center= tonumber(io.popen("tput cols"):read()) or CENTER*2
 if center<5 then center= 65 end
 center= math.floor(center/2)
@@ -214,7 +212,8 @@ center= math.floor(center/2)
 ffleft = ffnew()
 ffright= ffnew()
 local coro= coroutine.create(corobody)
-for line in io.popen(diffcmd.."'"..arg[1].."' '"..arg[2].."'"):lines() do
+local args= "'"..table.concat(arg, "' '").."'"
+for line in io.popen(diffcmd..args):lines() do
     -- remove trailing garbage from CRLF etc ending files:
     while true do
         local last= line:sub(-1)

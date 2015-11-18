@@ -15,7 +15,7 @@ The code is available at:
 
 ## Install
 
-In order to use it, you need [Lua](http://lua.org/) 5.2 or newer and the `diff` command in your `PATH`. 
+In order to use it, you need [Lua](http://lua.org/) 5.2 or newer and the `diff` command in your `PATH`.
 
 Then just copy the file `sbdiff` e.g. to `/usr/local/bin/`.
 
@@ -49,3 +49,7 @@ Then you can use sbdiff within your Git projects as external diff command:
 If you like this tool drop me a note on [sourceforge](https://sourceforge.net/p/sbdiff/discussion/).
 
 If you find a bug, leave me a [ticket](https://sourceforge.net/p/sbdiff/tickets/).
+
+## Todo
+
+Fix position of "no line feed at EOF" message
