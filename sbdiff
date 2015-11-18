@@ -70,12 +70,15 @@ end
 
 -- Chunk-Globals:
 local COLOFF    = "\027[0m\n"
-local center
 local diffcmd= "diff -Nurt "
 local diffcmdlen= diffcmd:len()
-local ffleft, ffright
 local lnum, rnum
 local spacecache= {}
+local ffleft = ffnew()
+local ffright= ffnew()
+local center= tonumber(io.popen("tput cols"):read()) or CENTER*2
+if center<5 then center= 65 end
+center= math.floor(center/2)
 
 local function getspace(len)
     if len <= 0 then return "" end
@@ -177,7 +180,7 @@ local function each_line()
     return "nextfile", line -- multistep continue
 end
 
-local function corobody(line)
+local coro= coroutine.create(function(line)
     while true do -- each file:
         purgediffs() -- print pending diffs at end of last file
         if line:sub(1, diffcmdlen) == diffcmd then
@@ -203,15 +206,8 @@ local function corobody(line)
         end
     ::nextfile::
     end
-end
+end)
 
-center= tonumber(io.popen("tput cols"):read()) or CENTER*2
-if center<5 then center= 65 end
-center= math.floor(center/2)
-
-ffleft = ffnew()
-ffright= ffnew()
-local coro= coroutine.create(corobody)
 local args= "'"..table.concat(arg, "' '").."'"
 for line in io.popen(diffcmd..args):lines() do
     -- remove trailing garbage from CRLF etc ending files:
