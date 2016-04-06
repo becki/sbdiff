@@ -70,25 +70,17 @@ end
 
 -- Chunk-Globals:
 local COLOFF    = "\027[0m\n"
-local diffcmd= "diff -Nurt "
+local diffcmd   = "diff -Nurt "
 local diffcmdlen= diffcmd:len()
-local lnum, rnum
-local spacecache= {}
-local ffleft = ffnew()
-local ffright= ffnew()
-local cols= tonumber(io.popen("tput cols"):read()) or CENTER*2
+local ffleft    = ffnew()
+local ffright   = ffnew()
+local cols      = tonumber(io.popen("tput cols"):read()) or CENTER*2
 if cols<5 then cols= 65 end
-local center= math.floor(cols/2)
+local center    = math.floor(cols/2)
+local lnum, rnum
 
 local function getspace(len)
-    if len <= 0 then return "" end
-    local spaces= spacecache[len]
-    if spaces then return spaces end
-    spaces= {}
-    for i= 1,len do spaces[#spaces+1]= " " end
-    spaces= table.concat(spaces)
-    spacecache[len]= spaces
-    return spaces
+    return string.rep(" ", len)
 end
 
 local function utf8len(str)
