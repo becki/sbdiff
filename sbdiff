@@ -76,9 +76,9 @@ local lnum, rnum
 local spacecache= {}
 local ffleft = ffnew()
 local ffright= ffnew()
-local center= tonumber(io.popen("tput cols"):read()) or CENTER*2
-if center<5 then center= 65 end
-center= math.floor(center/2)
+local cols= tonumber(io.popen("tput cols"):read()) or CENTER*2
+if cols<5 then cols= 65 end
+local center= math.floor(cols/2)
 
 local function getspace(len)
     if len <= 0 then return "" end
@@ -199,7 +199,8 @@ local coro= coroutine.create(function(line)
             assert(not purgediffs())
             -- get line number:
             lnum, rnum= line:match("@@ %-(%d+).* %+(%d+).* @@")
-            io.write(NEWDIFFCOL, line, COLOFF)
+            local fill= math.floor((cols - line:reallen()) /2)
+            io.write(NEWDIFFCOL, line, string.rep(" -", fill), COLOFF)
             local stop
             repeat stop, line= each_line() until stop
             if stop == "nextfile" then goto nextfile end
