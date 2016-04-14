@@ -84,7 +84,8 @@ local function getspace(len)
 end
 
 local function utf8len(str)
-    return assert(utf8.len(str))
+    -- fall back to simple byte len on non-utf8 byte sequences:
+    return utf8.len(str) or str:len()
 end
 
 local function utf8prefix(str, len)
