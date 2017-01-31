@@ -9,9 +9,9 @@ Because it is a console application, no GUI is necessary.
 
 The code is available at:
 
-* [https://sourceforge.net/projects/sbdiff/](https://sourceforge.net/projects/sbdiff/) (primary)
-* [https://github.com/becki/sbdiff](https://github.com/becki/sbdiff) (mirror)
-* [https://bitbucket.org/becki/sbdiff](https://bitbucket.org/becki/sbdiff) (mirror)
+* [Sourceforge](http://sf.net/p/sbdiff/code) (primary)
+* [Bitbucket](https://bitbucket.org/becki/sbdiff) (mirror)
+* [Github](https://github.com/becki/sbdiff) (mirror)
 
 ## Install
 
